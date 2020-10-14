@@ -1,0 +1,164 @@
+Zack White
+Dr. Grant
+Intro to Text Analytics
+Project 2: Phase 2
+
+======================PURPOSE==============================
+----------------------Phase 2------------------------------
+THe purpose of project 2 phase 2 is to predict the cuisine type
+of input ingredients and to find recipes/food closest the input 
+ingredients.
+======================DESCRIPTION/PROCESS==========================
+----------------------Phase 2------------------------------
+The instructions were to:
+(1) Pre-train and index and necessary classifiers using the existing datasets.
+(2) Ask the user to input all the ingredients that they are interested in.
+(3) Use the model to predict the type of cuisine and tell the user.
+(4) Find the top N closest foods (you can define N). Return the IDs of those dishes to the user. If a dataset does not have IDs associated with them you may add them arbitrarily.
+
+To achieve these goals I did the follow:
+1. extract json data and store cuisine, food, and ingredients into three lists
+2. make a new list in which ingredients (a list of ingredients per each foood within the list)
+	are converted into a string where the ingredients are seperated by commas. Since Countvectorizer can accepted a list of strings, this appears to be an optimal way to read the list of ingredients
+3. using the list of ingredient strings, count the number of occurances and index it.
+4. with the matrix of the ingredient occurances, find the tfidf of each ingredient ignoring 
+	ingredients that occur more than 50% of the documents
+	The reason words that occur more than 50% are ignored is due to speed and accuracy. Assuming 100% accurancy is outlandish. But when looking at the predicted catagories of ignoring words that occur more than 25%, 50%, and 100% vs the actual number of classifications:
+25%:
+southern_us --> 6526
+jamaican --> 134
+vietnamese --> 212
+russian --> 37
+italian --> 10284
+mexican --> 7192
+korean --> 366
+british --> 105
+filipino --> 161
+spanish --> 199
+indian --> 3519
+moroccan --> 378
+japanese --> 896
+chinese --> 3856
+greek --> 529
+brazilian --> 109
+french --> 2354
+thai --> 1714
+irish --> 91
+cajun_creole --> 1112
+
+50%:
+vietnamese --> 198
+italian --> 10448
+russian --> 34
+japanese --> 870
+mexican --> 7238
+cajun_creole --> 1099
+spanish --> 179
+chinese --> 3934
+brazilian --> 105
+greek --> 503
+southern_us --> 6533
+korean --> 352
+french --> 2310
+jamaican --> 116
+indian --> 3492
+irish --> 83
+british --> 102
+thai --> 1687
+moroccan --> 350
+filipino --> 141
+
+100%:
+moroccan --> 343
+cajun_creole --> 1093
+greek --> 495
+chinese --> 3946
+french --> 2295
+filipino --> 142
+british --> 103
+southern_us --> 6535
+thai --> 1669
+brazilian --> 107
+mexican --> 7244
+irish --> 82
+spanish --> 179
+indian --> 3513
+italian --> 10476
+vietnamese --> 197
+japanese --> 862
+russian --> 34
+korean --> 347
+jamaican --> 112
+
+Actual Classifications:
+filipino => 755
+irish => 667
+indian => 3003
+jamaican => 526
+russian => 489
+brazilian => 467
+korean => 830
+moroccan => 821
+greek => 1175
+french => 2646
+cajun_creole => 1546
+southern_us => 4320
+chinese => 2673
+italian => 7838
+vietnamese => 825
+mexican => 6438
+thai => 1539
+japanese => 1423
+spanish => 989
+british => 804
+
+All three methods are similar but are not the highest in accuracy compared to the actual classification. WHile 25% might be more accurate I feel like it removes some important words to classifier and 100% contains too many words. So 50% is a safe df_max to have.
+5. using the tfidf matrix and the list of cuisines as classifers, apply Multinomial Naive Bayes classification
+6. with an input string of ingredients and using multinomial naive bayes, predict the classification of the string of ingredients, and print it
+7. Initiallize NearestNeighbors and put the count matrix in it. 
+8. with the count vector of the input ingredients, find the N nearest neighbors, N being the number of recipes the user wants to find
+9. print N recipes within radius 1
+======================INSTALLATION========================
+----------------------Phase 2-----------------------------
+Create and activate your Python3 virtual environment in the directory project2_phase2. (This program works with 3.4,3.5, and 3.6)
+then do the following commands:
+1. pip3 install -r requirements.txt
+2. pip3 install .
+3. python3 main.py (if you want to run the main program)
+PLEASE READ: The requirements in phase2 are unchanged so while you can still install it and it will work. You can just install one phase and the other phase will run just fine.
+=======================HOW TO RUN======================
+To run the program 
+python3 main.py (thats it)
+=====================ASSUMPTIONS======================
+I can have phase 1 be seperate
+I assumed that the classifer predictions did not have to be 100% correct 
+That document frequency over 50% can be filtered
+The N closests foods can be of any cuisine type, not the one that is predicted. 
+(Granted if they are all similar in ingredients then they probably will be the same cuisine) 
+
+======================RESOURCES============================
+sklearn docs on CountVectorization, TfidfTransformer, NearestNeighbors, MultinomialNB docs
+A lot of the ideas were taken from sklearn's doc Working With Text to count occurances and vectorize it (train it),
+find the tfidf of the ingredients, using MultinomialNB as a model. I even used some variable names from it.
+=======================METHODS===============================
+main.py-------------------------------------
+main.py imports methods from project2.py from the project2 directory.
+
+main function just runs UserInterface() from python.py
+
+project2.py-------------------------------------
+extractJSON():
+Summary: Takes the data from yummly.json in the docs directory, extracts it, and makes 3 lists one for ID that is food, one for ingredients that is ingredients, and one for cuisine that has cuisine. The three lists are returned.
+Details: filename is a string that contains the filepath for the yummly.json doc. food,ingredients, cuisines are three empty lists that will hold the data. open the file using the filename string and define it as jsonfile. Load the data in jsonfile to data. Iterate through data in a for loop and append the data the three lists. The key 'id' appends to food, 'ingredients' appends to ingredients, and cuisine appends to cuisine. Return the three lists.
+
+convertToString(ingredients):
+Summary:converts a lists of list in to a list of strings. Means that the sublist to turned into a string and put into a list
+Details: Initiate a list anmed ingredients_String. iterate through the list ingredients with the current iteration being ingredient. convert current iter list to string, removes brackets and ', then appends it to ingredients_String list. Return lsit.
+
+FindCuisineAndRecipes(foods,ingredients, cuisines, numberOfRecipes, inputIngredients):
+Summary:with cuisine as a classifer, finds number of ingredient occurances per food (which turns it into a numpy matrix, find the terf frequency and inverted document frequency of each ingredient. Using Multinomial Naive Bayes, predict cuisine of input strings of ingredients using the tfidf matrix of ingredients. Using the input of number of recipes to return and the count matrix of ingredients, prints N recipes closest to the input string of ingredients
+Details: converts lsit of ingredients in list to a list of strings. This is because CountVectorization works well with strings. Having a lsit of strigns is essential to classification. initiallizes a CountVectorizer that looks at words appearing less than 25% of the time. fit and transform the list of ingredient strings into a matrix of occurances and indexes each ingredient them. initiallize the term frequency and inverted docment frequency transformer and make sure it uses idf. fit and transform the countvecotizer to find the tfidf of each ingredient and have them in a matrix. initiallize multinomial Naive Bayes Classifer. fit the tfidf matrix and have cuisine classify it. with the input string, convert the string in to the indexes and number of occurances of the classifier above then transform it with respect to the tfidf matrix above. predict what the classifier of the input ingredients is. print the predicted classifer. N is set to the input number of recipes wanted. The Radius is set to 1. initiallize nearestNeighbors to look for N in the radius r. fit all the occurance count into NearestNeighbor. finds N neighbors closest to the count matrix of the predicted string. starts for loop of neighbors found, n is the index of neighbors. prints food at index n. End method
+
+UserInterface():
+Summary/Details: The only method directly used in main.py. It asked for a the user to type the exact ingredients seperated by a comma and the number of recipes returned. The info is extracted from yummly.json and findCuisineAndRecipes is used.
+
